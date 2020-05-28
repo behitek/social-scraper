@@ -17,7 +17,7 @@ except:
     from settings import *
 
 FB_HOME = "https://mbasic.facebook.com/"
-log.basicConfig(format='%(asctime)s\t%(levelname)s\t%(message)s', level=log.INFO)
+log.basicConfig(format='%(asctime)s\t%(levelname)s\t%(message)s', level=log.WARNING)
 
 if PROXY:
     os.environ['http_proxy'] = PROXY
@@ -41,13 +41,14 @@ def get_driver(username, password):
     driver.find_element_by_css_selector('#m_login_email').send_keys(username)
     driver.find_element_by_css_selector('.bo').send_keys(password)
     driver.find_element_by_css_selector('.bq').click()
+    # time.sleep(100)
     try:
         driver.find_element_by_css_selector('#m_login_email')
         log.error("Login failed!")
         driver.close()
         exit(0)
     except NoSuchElementException:
-        log.info("Login success!")
+        log.warning("Login success!")
         # Go throung login with one tap
         if re.match(r'.+facebook\.com\/login\/save-device.+', driver.current_url):
             for ele in driver.find_elements_by_css_selector('input'):
@@ -62,11 +63,14 @@ def get_driver(username, password):
 
 
 class PostScraper:
-    def __init__(self, username, password):
+    def __init__(self):
         if USE_VIRTUAL_DISPLAY:
             self.display = Display(visible=0, size=(1366, 768))
             self.display.start()
-        self.driver = get_driver(username, password)
+        self.driver = None
+
+    def set_driver(self, driver):
+        self.driver = driver
 
     def make_a_request(self, url):
         st = random.randint(MIN_DELAY_TIME, MAX_DELAY_TIME)
@@ -135,9 +139,10 @@ class PostScraper:
         else:
             log.info('\tView mores replies not found! Done. Go back...')
 
-    def close(self):
-        self.driver.close()
+    def destroy_driver(self):
         self.driver.quit()
+
+    def close(self):
         if USE_VIRTUAL_DISPLAY:
             self.display.stop()
 
@@ -148,15 +153,27 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--password', required=True, help='Facebook Password')
     parser.add_argument('-i', '--input', required=True, help='Input file path (Output of me_page_scraper.py)')
     parser.add_argument('-o', '--output', required=True, help='Output file path')
-
+    parser.add_argument('-n', '--nline', type=int, default=0, help='Checkpoint (For re-run)')
+    check_point = ''
     args = parser.parse_args()
-    pc = PostScraper(args.username, args.password)
+    pc = PostScraper()
     try:
         lines = open(args.input).read().splitlines()
         for idx, line in enumerate(lines):
+            if idx + 1 < args.nline:
+                continue
             post_url = json.loads(line).get('post_url')
-            log.info('Crawl post n = {} / {}, url = {}'.format(idx + 1, len(lines), post_url))
-            pc.scrap_post(post_url, args.output)
+            pc.set_driver(get_driver(args.username, args.password))
+            check_point = 'Crawl post n = {} / {}, url = {}'.format(idx + 1, len(lines), post_url)
+            log.warning(check_point)
+            try:
+                pc.scrap_post(post_url, args.output)
+            except:
+                log.error("Exception occurred", exc_info=True)
+            pc.destroy_driver()
     except:
         log.error("Exception occurred", exc_info=True)
         pc.close()
+    finally:
+        with open(args.input + '.ckp', 'w', encoding='utf8') as fp:
+            fp.write(check_point)

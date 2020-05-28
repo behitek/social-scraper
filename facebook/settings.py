@@ -12,8 +12,8 @@ else:
     # USE PROXY
     PROXY = None
 # Set random delay time between min and max before call next request
-MIN_DELAY_TIME = 3
-MAX_DELAY_TIME = 7
+MIN_DELAY_TIME = 1
+MAX_DELAY_TIME = 1
 
 
 
