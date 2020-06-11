@@ -42,7 +42,7 @@ def download_comments(youtube_id, sleep=.1):
     return download_comments_old_api(youtube_id, sleep)
 
 
-def download_comments_new_api(youtube_id, sleep=1):
+def download_comments_new_api(youtube_id, sleep=.1):
     # Use the new youtube API to download some comments
     session = requests.Session()
     session.headers['User-Agent'] = USER_AGENT
@@ -204,7 +204,7 @@ def download(youtube_id, output, limit=0, append=False):
         if not youtube_id or not output:
             raise ValueError('you need to specify a Youtube ID and an output filename')
         count = 0
-        with io.open(output, 'a' if append else 'w', encoding='utf8') as fp:
+        with io.open(output, 'a+' if append else 'w', encoding='utf8') as fp:
             for comment in download_comments(youtube_id):
                 comment_json = json.dumps(comment, ensure_ascii=False)
                 print(comment_json.decode('utf-8') if isinstance(comment_json, bytes) else comment_json, file=fp)

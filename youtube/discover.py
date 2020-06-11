@@ -1,8 +1,10 @@
 import datetime
 import os
 import re
+import time
 import traceback
 from queue import Queue
+from threading import Thread
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,6 +19,8 @@ LOGTYPE = {
     "ERROR": "ERROR"
 }
 
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+
 
 def generate_filename(data_dir):
     return os.path.join(data_dir, 'youtube_{}.txt'.format(datetime.datetime.today().strftime('%Y%m%d')))
@@ -27,11 +31,21 @@ def log(mes, log_type=LOGTYPE["INFO"]):
 
 
 def is_vietnam_video(url):
-    r = requests.get(url)
+    session = requests.Session()
+    session.headers['User-Agent'] = USER_AGENT
+    r = session.get(url)
     if r.status_code == 200:
         soup = BeautifulSoup(r.text, 'lxml')
-        title = soup.title.string.lower()
+        try:
+            title = soup.find("meta", property="og:title")['content'].lower()
+        except:
+            return False
+        # print(title)
         return len(re.findall(r'[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', title)) > 3
+    elif r.status_code == 429:
+        print('Got', url, r.status_code)
+        time.sleep(1)
+        return is_vietnam_video(url)
     else:
         return False
 
@@ -44,9 +58,11 @@ class Discover:
         for url in init_url:
             self.discover_id.put(url)
 
-    def grab_url(self, input_url):
+    def grab_url(self, input_url, thread_name):
         try:
-            r = requests.get(input_url)
+            session = requests.Session()
+            session.headers['User-Agent'] = USER_AGENT
+            r = session.get(input_url)
             if r.status_code == 200:
                 urls = re.findall(r'/watch\?v=.{11}"', r.text)
                 count = 0
@@ -56,18 +72,31 @@ class Discover:
                         count += 1
                         self.discover_id.put(url)
                         self.visited_id.add(url)
-                log('{}: Found {} new urls.'.format(input_url, count) + ' discover_size: {}'.format(
+                log('{} - {}: Found {} new urls.'.format(thread_name, input_url, count) + ' discover_size: {}'.format(
                     self.discover_id.qsize()))
+            elif r.status_code == 429:
+                print('Got', input_url, r.status_code)
+                time.sleep(1)
+                self.grab_url(input_url)
         except:
             log(traceback.format_exc(), LOGTYPE['ERROR'])
 
-    def start(self):
+    def worker(self, thread_name):
         while not self.discover_id.empty():
             try:
                 url = self.discover_id.get()
-                self.grab_url(url if url.startswith('http') else 'https://youtube.com/watch?v={}'.format(url))
+                self.grab_url(url if url.startswith('http') else 'https://youtube.com/watch?v={}'.format(url), thread_name)
                 if len(url) == 11:
-                    count = download(url, generate_filename(self.data_dir), 0, True)
-                    log('Download {}: {} comment(s).'.format(url, count))
+                    count = download(url, "data/" + thread_name + "_youtube.txt", 0, True)
+                    log('{} - Download {}: {} comment(s).'.format(thread_name, url, count))
             except:
                 log(traceback.format_exc(), LOGTYPE['ERROR'])
+
+    def start(self, num_thread=5):
+        threads = []
+        for i in range(num_thread):
+            t = Thread(target=self.worker, args=('thread_{}'.format(i + 1),))
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join()

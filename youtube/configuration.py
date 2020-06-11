@@ -1,7 +1,7 @@
 import os
 
 PRODUCTION = False
-HTTP_PROXY = 'http://10.30.58.36:81'
+HTTP_PROXY = 'http://10.60.28.99:81'
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
