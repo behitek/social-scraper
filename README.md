@@ -3,7 +3,8 @@ Dự án thu thập dữ liệu tiếng Việt từ các mạng xã hội, bao g
 - [x] Facebook
 - [x] Instagram
 - [x] Youtube
-- [ ] Các đầu báo online
+- [x] Forum
+- [x] Xem dự án thu thập [Các đầu báo online](https://github.com/nguyenvanhieuvn/news-crawler)
 
 > Dự án phục vụ cho mục đích công việc & học tập của cá nhân. 
 ### Youtube 
@@ -15,9 +16,13 @@ Tích hợp với chức năng tự động tìm kiếm các video mới (không
 
 Trên thực tế, mình đã chạy 3 ngày và tập URL hàng đợi vẫn đang tăng dần đều.
 
-Hiện tại hệ thống này chạy trên 1 luồng, 1 ngày thu thập được > 500MB raw comment. Có thể tích hợp chạy đa luồng để tăng tốc độ.
+Cập nhật chức năng:
+
 - [x] Cấu hình động
 - [x] Hỗ trợ proxy
+- [x] Chạy đa luồng
+- [x] Lọc video tiếng Việt theo title
+- [x] Khởi tạo list url ban đầu (lấy text gần domain chúng ta cần)
 Cách chạy:
 ```text
 $ cd youtube
