@@ -6,12 +6,6 @@ from collections import deque
 import logging
 import os, sys, re, json
 
-proxy = "http://10.60.28.99:81"
-os.environ['http_proxy'] = proxy 
-os.environ['HTTP_PROXY'] = proxy
-os.environ['https_proxy'] = proxy
-os.environ['HTTPS_PROXY'] = proxy
-
 logging.basicConfig(stream=sys.stdout,
                     format='%(asctime)s %(name)s %(levelname)s: %(message)s',
                     level=logging.INFO)
