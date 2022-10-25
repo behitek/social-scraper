@@ -1,3 +1,5 @@
+# The project is temporarily suspended!
+
 ## VietNam Social Scraper
 Dự án thu thập dữ liệu tiếng Việt từ các mạng xã hội, bao gồm:
 - [x] Facebook
